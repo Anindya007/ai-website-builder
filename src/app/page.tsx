@@ -1,10 +1,22 @@
-const Home = () => {
+import { trpc, getQueryClient } from '@/trpc/server';
+import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import { Client } from './client';
+import { Suspense } from 'react';
+
+const Home = async () => {
+
+  const queryClient = getQueryClient();
+  void queryClient.prefetchQuery(trpc.hello.queryOptions({text: 'from prefetch'}));
+
   return (
-    <div className="font-bold">
-      <h1>Welcome to the Home Page</h1>
-      <p>This is the main content of the home page.</p>
-    </div>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <h1>Welcome to the AI Website Builder</h1>  
+          <Client/>
+        </Suspense> 
+      </HydrationBoundary>
+    
   );
 } 
 
-export default Home;
+export default Home;  
