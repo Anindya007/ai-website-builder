@@ -1,21 +1,87 @@
 "use client"
 
-import { Button } from "@/components/ui/button";
-import { useTRPC } from "@/trpc/client";
-import {useMutation} from "@tanstack/react-query";
-import {toast} from "sonner";
+import { useState } from "react"
+import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent } from "@dnd-kit/core"
+import { ComponentPalette } from "@/components/component-palette"
+import { Canvas } from "@/components/canvas"
+import { Header } from "@/components/header"
+import { ProUpgradeModal } from "@/components/pro-upgrade-modal"
+import type { ComponentType } from "@/types/components"
 
-const Home = () => {
-  const trpc = useTRPC();
-  const invoke = useMutation(trpc.invoke.mutationOptions({onSuccess:() => {
-    toast.success("Background job invoked successfully!");
-  }}))
+export default function WebsiteBuilder() {
+  const [canvasComponents, setCanvasComponents] = useState<ComponentType[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [draggedComponent, setDraggedComponent] = useState<ComponentType | null>(null)
+  const [showProModal, setShowProModal] = useState(false)
+  const [isPro, setIsPro] = useState(false)
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event
+    setActiveId(active.id as string)
+
+    // Find the component being dragged
+    const component = active.data.current?.component as ComponentType
+    setDraggedComponent(component)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && over.id === "canvas") {
+      const component = active.data.current?.component as ComponentType
+
+      // Check if it's a pro component and user doesn't have pro
+      if (component.isPro && !isPro) {
+        setShowProModal(true)
+        setActiveId(null)
+        setDraggedComponent(null)
+        return
+      }
+
+      // Add component to canvas
+      const newComponent = {
+        ...component,
+        id: `${component.id}-${Date.now()}`,
+        canvasId: `canvas-${Date.now()}`,
+      }
+
+      setCanvasComponents((prev) => [...prev, newComponent])
+    }
+
+    setActiveId(null)
+    setDraggedComponent(null)
+  }
+
+  const removeComponent = (canvasId: string) => {
+    setCanvasComponents((prev) => prev.filter((comp) => comp.canvasId !== canvasId))
+  }
+
+  const upgradeToPro = () => {
+    setIsPro(true)
+    setShowProModal(false)
+  }
 
   return (
-    <div className="mx-auto p-4 max-w-7xl">
-      <Button disabled={invoke.isPending} onClick={() => invoke.mutate({ text: "John" })}>Invoke Background Job</Button>
-    </div>
-  );
-} 
+    <div className="h-screen flex flex-col bg-gray-50">
+      <Header isPro={isPro} onUpgrade={() => setShowProModal(true)} />
 
-export default Home;  
+      <div className="flex-1 flex overflow-hidden">
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <ComponentPalette isPro={isPro} />
+          <Canvas components={canvasComponents} onRemoveComponent={removeComponent} />
+
+          <DragOverlay>
+            {draggedComponent && (
+              <div className="bg-white border-2 border-blue-500 rounded-lg p-4 shadow-lg opacity-90">
+                <div className="text-sm font-medium">{draggedComponent.name}</div>
+                <div className="text-xs text-gray-500">{draggedComponent.category}</div>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      </div>
+
+      <ProUpgradeModal isOpen={showProModal} onClose={() => setShowProModal(false)} onUpgrade={upgradeToPro} />
+    </div>
+  )
+}
