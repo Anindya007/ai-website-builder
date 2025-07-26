@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent, DragOverEvent, closestCenter } from "@dnd-kit/core"
+import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent, DragOverEvent, closestCenter, pointerWithin, rectIntersection } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { ComponentPalette } from "@/components/component-palette"
 import { Canvas } from "@/components/canvas"
@@ -31,6 +31,19 @@ export default function WebsiteBuilder() {
     setDraggedComponent(component)
   }
 
+  const handleDragOver = (event: DragOverEvent) => {
+    // Disable drag in preview mode
+    if (isPreviewMode) return
+    
+    const { active, over } = event
+    
+    // This helps with drop zone detection when canvas has content
+    if (over && (over.id === "canvas" || canvasComponents.find(c => c.canvasId === over.id))) {
+      // Allow dropping
+      return
+    }
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     // Disable drag in preview mode
     if (isPreviewMode) return
@@ -47,26 +60,44 @@ export default function WebsiteBuilder() {
           setCanvasComponents((prev) => arrayMove(prev, oldIndex, newIndex))
         }
       }
-      // Handle adding new component to canvas
-      else if (over.id === "canvas") {
+      // Handle adding new component to canvas or inserting at specific position
+      else if (over.id === "canvas" || canvasComponents.find(c => c.canvasId === over.id)) {
         const component = active.data.current?.component as ComponentType
 
-        // Check if it's a pro component and user doesn't have pro
-        if (component.isPro && !isPro) {
-          setShowProModal(true)
-          setActiveId(null)
-          setDraggedComponent(null)
-          return
-        }
+        // Only proceed if this is a new component from palette (not reordering)
+        if (component && !canvasComponents.find(c => c.canvasId === active.id)) {
+          // Check if it's a pro component and user doesn't have pro
+          if (component.isPro && !isPro) {
+            setShowProModal(true)
+            setActiveId(null)
+            setDraggedComponent(null)
+            return
+          }
 
-        // Add component to canvas
-        const newComponent = {
-          ...component,
-          id: `${component.id}-${Date.now()}`,
-          canvasId: `canvas-${Date.now()}`,
-        }
+          // Add component to canvas
+          const newComponent = {
+            ...component,
+            id: `${component.id}-${Date.now()}`,
+            canvasId: `canvas-${Date.now()}`,
+          }
 
-        setCanvasComponents((prev) => [...prev, newComponent])
+          // If dropping on a specific component, insert after it
+          if (over.id !== "canvas") {
+            const targetIndex = canvasComponents.findIndex(c => c.canvasId === over.id)
+            if (targetIndex !== -1) {
+              setCanvasComponents((prev) => {
+                const newComponents = [...prev]
+                newComponents.splice(targetIndex + 1, 0, newComponent)
+                return newComponents
+              })
+            } else {
+              setCanvasComponents((prev) => [...prev, newComponent])
+            }
+          } else {
+            // Drop at the end if dropped on canvas
+            setCanvasComponents((prev) => [...prev, newComponent])
+          }
+        }
       }
     }
 
@@ -118,8 +149,9 @@ export default function WebsiteBuilder() {
       <div className="flex-1 flex overflow-hidden">
         <DndContext 
           onDragStart={handleDragStart} 
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
-          collisionDetection={closestCenter}
+          collisionDetection={pointerWithin}
         >
           {!isPreviewMode && <ComponentPalette isPro={isPro} />}
            <Canvas

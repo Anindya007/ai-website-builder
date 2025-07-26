@@ -36,7 +36,9 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
         ref={setNodeRef}
         className={`
           flex-1 ${isPreviewMode ? 'p-0 bg-white' : 'p-6'} overflow-y-auto min-h-0
-          ${isOver && !isPreviewMode ? "bg-blue-50 border-2 border-dashed border-blue-300" : ""}
+          ${isOver && !isPreviewMode ? "bg-blue-50" : ""}
+          ${!isPreviewMode ? "min-h-[400px]" : ""}
+          transition-colors duration-200
         `}
       >
         {components.length === 0 ? (
@@ -52,17 +54,33 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
         ) : (
           <SortableContext items={components.map(c => c.canvasId!)} strategy={verticalListSortingStrategy}>
             <div className={isPreviewMode ? "space-y-0" : "space-y-4"}>
-              {components.map((component) => (
-                <SortableCanvasComponent
-                  key={component.canvasId}
-                  isEditing={editingComponent === component.canvasId && !isPreviewMode}
-                  component={component}
-                  onRemove={() => onRemoveComponent(component.canvasId!)}
-                  onToggleEdit={() => onToggleEdit(component.canvasId!)}
-                  onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
-                  isPreviewMode={isPreviewMode}
-                />
+              {/* Drop zone indicator at the top when dragging */}
+              {isOver && !isPreviewMode && (
+                <div className="h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all" />
+              )}
+              
+              {components.map((component, index) => (
+                <div key={component.canvasId}>
+                  <SortableCanvasComponent
+                    isEditing={editingComponent === component.canvasId && !isPreviewMode}
+                    component={component}
+                    onRemove={() => onRemoveComponent(component.canvasId!)}
+                    onToggleEdit={() => onToggleEdit(component.canvasId!)}
+                    onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
+                    isPreviewMode={isPreviewMode}
+                  />
+                  
+                  {/* Drop zone indicator between components when dragging */}
+                  {isOver && !isPreviewMode && index < components.length - 1 && (
+                    <div className="h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all my-2" />
+                  )}
+                </div>
               ))}
+              
+              {/* Drop zone indicator at the bottom when dragging */}
+              {isOver && !isPreviewMode && (
+                <div className="h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all" />
+              )}
             </div>
           </SortableContext>
         )}
@@ -108,7 +126,8 @@ function SortableCanvasComponent(props: SortableCanvasComponentProps) {
       style={style}
       className={`
         ${isDragging ? "opacity-50 z-50" : ""} 
-        ${isOver && !isDragging ? "border-t-2 border-blue-500" : ""}
+        ${isOver && !isDragging && !isPreviewMode ? "ring-2 ring-blue-400 ring-opacity-50" : ""}
+        transition-all duration-200
       `}
     >
       <CanvasComponent {...props} dragHandleProps={{ attributes, listeners }} />
