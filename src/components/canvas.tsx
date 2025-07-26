@@ -4,13 +4,18 @@ import { useDroppable } from "@dnd-kit/core"
 import { Button } from "@/components/ui/button"
 import type { ComponentType } from "@/types/components"
 import { Trash2, Edit } from "lucide-react"
+import { useState } from "react"
+import { getDefaultHtml } from "@/lib/default-html"
 
 interface CanvasProps {
   components: ComponentType[]
   onRemoveComponent: (canvasId: string) => void
+  editingComponent: string | null
+  onToggleEdit: (canvasId: string) => void
+  onUpdateHtml: (canvasId: string, htmlContent: string) => void
 }
 
-export function Canvas({ components, onRemoveComponent }: CanvasProps) {
+export function Canvas({ components, onRemoveComponent, editingComponent, onToggleEdit, onUpdateHtml }: CanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "canvas",
   })
@@ -44,8 +49,11 @@ export function Canvas({ components, onRemoveComponent }: CanvasProps) {
             {components.map((component) => (
               <CanvasComponent
                 key={component.canvasId}
+                isEditing={editingComponent === component.canvasId}
                 component={component}
                 onRemove={() => onRemoveComponent(component.canvasId!)}
+                onToggleEdit={() => onToggleEdit(component.canvasId!)}
+                onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
               />
             ))}
           </div>
@@ -57,24 +65,56 @@ export function Canvas({ components, onRemoveComponent }: CanvasProps) {
 
 interface CanvasComponentProps {
   component: ComponentType
+  isEditing: boolean
   onRemove: () => void
+  onToggleEdit: () => void
+  onUpdateHtml: (htmlContent: string) => void
 }
 
-function CanvasComponent({ component, onRemove }: CanvasComponentProps) {
-  return (
-    <div className="group relative bg-white border border-gray-200 rounded-lg p-6 hover:border-blue-300 transition-colors">
+function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml }: CanvasComponentProps) {
+  const [htmlContent, setHtmlContent] = useState(component.htmlContent || getDefaultHtml(component))
+
+  const handleSave = () => {
+    onUpdateHtml(htmlContent)
+    onToggleEdit()
+  }
+
+  const handleCancel = () => {
+    setHtmlContent(component.htmlContent || getDefaultHtml(component))
+    onToggleEdit()
+  }
+
+   return (
+    <div className="group relative bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
       {/* Component Actions */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-        <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-transparent">
-          <Edit className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-transparent" onClick={onRemove}>
-          <Trash2 className="w-3 h-3" />
-        </Button>
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+        {isEditing ? (
+          <>
+            <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleSave}>
+              Save
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleCancel}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onToggleEdit}>
+              <Edit className="w-3 h-3" />
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onRemove}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </>
+        )}
       </div>
 
-      {/* Component Preview */}
-      <ComponentPreview component={component} />
+      {/* Component Content */}
+      {isEditing ? (
+        <Editor value={htmlContent} onChange={setHtmlContent} componentName={component.name} />
+      ) : (
+        <div className="p-6" dangerouslySetInnerHTML={{ __html: component.htmlContent || getDefaultHtml(component) }} />
+      )}
     </div>
   )
 }
@@ -196,4 +236,31 @@ function ComponentPreview({ component }: { component: ComponentType }) {
     default:
       return <div className="text-center py-8 text-gray-500">Component Preview: {component.name}</div>
   }
+
+}
+
+function Editor({
+  value,
+  onChange,
+  componentName,
+}: { value: string; onChange: (value: string) => void; componentName: string }) {
+  return (
+    <div className="border border-gray-300 rounded-lg overflow-hidden">
+      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+        <span className="text-sm font-medium">Editing: {componentName}</span>
+      </div>
+      <textarea
+        className="w-full h-48 p-4 font-mono text-sm border-none resize-none focus:outline-none bg-gray-900 text-green-400"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={`Enter HTML for ${componentName}...`}
+        spellCheck={false}
+      />
+      <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
+        <p className="text-xs text-gray-600">
+          💡 Tip: Use standard HTML tags. Tailwind CSS classes are available for styling.
+        </p>
+      </div>
+    </div>
+  )
 }

@@ -5,4 +5,6 @@ export interface ComponentType {
   isPro: boolean
   preview: string
   canvasId?: string
+  htmlContent?: string
+  isEditing?: boolean
 }

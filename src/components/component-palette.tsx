@@ -101,7 +101,7 @@ export function ComponentPalette({ isPro }: ComponentPaletteProps) {
         <p className="text-sm text-gray-500 mt-1">Drag components to canvas</p>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-5rem)]">
+      <ScrollArea className="h-[calc(100vh-9em)]">
         <div className="p-4 space-y-6">
           {categories.map((category) => (
             <div key={category}>

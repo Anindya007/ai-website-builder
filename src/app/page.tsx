@@ -14,6 +14,7 @@ export default function WebsiteBuilder() {
   const [draggedComponent, setDraggedComponent] = useState<ComponentType | null>(null)
   const [showProModal, setShowProModal] = useState(false)
   const [isPro, setIsPro] = useState(false)
+  const [editingComponent, setEditingComponent] = useState<string | null>(null)
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
@@ -56,6 +57,16 @@ export default function WebsiteBuilder() {
     setCanvasComponents((prev) => prev.filter((comp) => comp.canvasId !== canvasId))
   }
 
+  
+  const updateComponentHtml = (canvasId: string, htmlContent: string) => {
+    setCanvasComponents((prev) => prev.map((comp) => (comp.canvasId === canvasId ? { ...comp, htmlContent } : comp)))
+  }
+
+  const toggleEditMode = (canvasId: string) => {
+    setEditingComponent(editingComponent === canvasId ? null : canvasId)
+  }
+
+
   const upgradeToPro = () => {
     setIsPro(true)
     setShowProModal(false)
@@ -68,7 +79,13 @@ export default function WebsiteBuilder() {
       <div className="flex-1 flex overflow-hidden">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <ComponentPalette isPro={isPro} />
-          <Canvas components={canvasComponents} onRemoveComponent={removeComponent} />
+           <Canvas
+            components={canvasComponents}
+            onRemoveComponent={removeComponent}
+            editingComponent={editingComponent}
+            onToggleEdit={toggleEditMode}
+            onUpdateHtml={updateComponentHtml}
+          />
 
           <DragOverlay>
             {draggedComponent && (
