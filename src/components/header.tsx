@@ -7,9 +7,10 @@ import { Crown, Download, Save, Eye } from "lucide-react"
 interface HeaderProps {
   isPro: boolean
   onUpgrade: () => void
+  onExport: () => void
 }
 
-export function Header({ isPro, onUpgrade }: HeaderProps) {
+export function Header({ isPro, onUpgrade , onExport}: HeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -24,15 +25,11 @@ export function Header({ isPro, onUpgrade }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" >
             <Eye className="w-4 h-4 mr-2" />
             Preview
           </Button>
-          <Button variant="outline" size="sm">
-            <Save className="w-4 h-4 mr-2" />
-            Save
-          </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={onExport}>
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>

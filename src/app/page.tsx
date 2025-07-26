@@ -7,6 +7,7 @@ import { Canvas } from "@/components/canvas"
 import { Header } from "@/components/header"
 import { ProUpgradeModal } from "@/components/pro-upgrade-modal"
 import type { ComponentType } from "@/types/components"
+import { generateCompleteHtml, downloadHtml } from "@/lib/html-generator"
 
 export default function WebsiteBuilder() {
   const [canvasComponents, setCanvasComponents] = useState<ComponentType[]>([])
@@ -72,9 +73,13 @@ export default function WebsiteBuilder() {
     setShowProModal(false)
   }
 
+  const handleDownload = () => {
+    downloadHtml(generateCompleteHtml(canvasComponents), 'my-website.html')
+  }
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <Header isPro={isPro} onUpgrade={() => setShowProModal(true)} />
+      <Header isPro={isPro} onUpgrade={() => setShowProModal(true)} onExport={handleDownload}/>
 
       <div className="flex-1 flex overflow-hidden">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
