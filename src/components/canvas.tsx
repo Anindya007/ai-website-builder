@@ -1,9 +1,11 @@
 "use client"
 
 import { useDroppable } from "@dnd-kit/core"
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import type { ComponentType } from "@/types/components"
-import { Trash2, Edit } from "lucide-react"
+import { Trash2, Edit, GripVertical } from "lucide-react"
 import { useState } from "react"
 import { getDefaultHtml } from "@/lib/default-html"
 
@@ -48,19 +50,21 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
             </div>
           </div>
         ) : (
-          <div className={isPreviewMode ? "space-y-0" : "space-y-4"}>
-            {components.map((component) => (
-              <CanvasComponent
-                key={component.canvasId}
-                isEditing={editingComponent === component.canvasId && !isPreviewMode}
-                component={component}
-                onRemove={() => onRemoveComponent(component.canvasId!)}
-                onToggleEdit={() => onToggleEdit(component.canvasId!)}
-                onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
-                isPreviewMode={isPreviewMode}
-              />
-            ))}
-          </div>
+          <SortableContext items={components.map(c => c.canvasId!)} strategy={verticalListSortingStrategy}>
+            <div className={isPreviewMode ? "space-y-0" : "space-y-4"}>
+              {components.map((component) => (
+                <SortableCanvasComponent
+                  key={component.canvasId}
+                  isEditing={editingComponent === component.canvasId && !isPreviewMode}
+                  component={component}
+                  onRemove={() => onRemoveComponent(component.canvasId!)}
+                  onToggleEdit={() => onToggleEdit(component.canvasId!)}
+                  onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
+                  isPreviewMode={isPreviewMode}
+                />
+              ))}
+            </div>
+          </SortableContext>
         )}
       </div>
     </div>
@@ -76,7 +80,43 @@ interface CanvasComponentProps {
   isPreviewMode?: boolean
 }
 
-function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml, isPreviewMode = false }: CanvasComponentProps) {
+interface SortableCanvasComponentProps extends CanvasComponentProps {}
+
+function SortableCanvasComponent(props: SortableCanvasComponentProps) {
+  const { component, isPreviewMode = false } = props
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver,
+  } = useSortable({ 
+    id: component.canvasId!,
+    disabled: isPreviewMode || props.isEditing
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`
+        ${isDragging ? "opacity-50 z-50" : ""} 
+        ${isOver && !isDragging ? "border-t-2 border-blue-500" : ""}
+      `}
+    >
+      <CanvasComponent {...props} dragHandleProps={{ attributes, listeners }} />
+    </div>
+  )
+}
+
+function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml, isPreviewMode = false, dragHandleProps }: CanvasComponentProps & { dragHandleProps?: any }) {
   const [htmlContent, setHtmlContent] = useState(component.htmlContent || getDefaultHtml(component))
 
   const handleSave = () => {
@@ -93,27 +133,48 @@ function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdat
     <div className={`group relative ${isPreviewMode ? '' : 'bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors'}`}>
       {/* Component Actions - Hidden in preview mode */}
       {!isPreviewMode && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
-          {isEditing ? (
-            <>
-              <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleSave}>
-                Save
+        <>
+          {/* Drag Handle */}
+          {!isEditing && (
+            <div 
+              className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              {...dragHandleProps?.attributes}
+              {...dragHandleProps?.listeners}
+            >
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 w-8 p-0 bg-white cursor-grab active:cursor-grabbing hover:bg-gray-50"
+                title="Drag to reorder"
+              >
+                <GripVertical className="w-3 h-3 text-gray-500" />
               </Button>
-              <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleCancel}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onToggleEdit}>
-                <Edit className="w-3 h-3" />
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onRemove}>
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </>
+            </div>
           )}
-        </div>
+          
+          {/* Action Buttons */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+            {isEditing ? (
+              <>
+                <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleSave}>
+                  Save
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onToggleEdit}>
+                  <Edit className="w-3 h-3" />
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onRemove}>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </>
+            )}
+          </div>
+        </>
       )}
 
       {/* Component Content */}

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent } from "@dnd-kit/core"
+import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent, DragOverEvent, closestCenter } from "@dnd-kit/core"
+import { arrayMove } from "@dnd-kit/sortable"
 import { ComponentPalette } from "@/components/component-palette"
 import { Canvas } from "@/components/canvas"
 import { Header } from "@/components/header"
@@ -36,25 +37,37 @@ export default function WebsiteBuilder() {
     
     const { active, over } = event
 
-    if (over && over.id === "canvas") {
-      const component = active.data.current?.component as ComponentType
-
-      // Check if it's a pro component and user doesn't have pro
-      if (component.isPro && !isPro) {
-        setShowProModal(true)
-        setActiveId(null)
-        setDraggedComponent(null)
-        return
+    if (over) {
+      // Handle reordering within canvas
+      if (over.id !== "canvas" && canvasComponents.find(c => c.canvasId === active.id)) {
+        const oldIndex = canvasComponents.findIndex(c => c.canvasId === active.id)
+        const newIndex = canvasComponents.findIndex(c => c.canvasId === over.id)
+        
+        if (oldIndex !== newIndex) {
+          setCanvasComponents((prev) => arrayMove(prev, oldIndex, newIndex))
+        }
       }
+      // Handle adding new component to canvas
+      else if (over.id === "canvas") {
+        const component = active.data.current?.component as ComponentType
 
-      // Add component to canvas
-      const newComponent = {
-        ...component,
-        id: `${component.id}-${Date.now()}`,
-        canvasId: `canvas-${Date.now()}`,
+        // Check if it's a pro component and user doesn't have pro
+        if (component.isPro && !isPro) {
+          setShowProModal(true)
+          setActiveId(null)
+          setDraggedComponent(null)
+          return
+        }
+
+        // Add component to canvas
+        const newComponent = {
+          ...component,
+          id: `${component.id}-${Date.now()}`,
+          canvasId: `canvas-${Date.now()}`,
+        }
+
+        setCanvasComponents((prev) => [...prev, newComponent])
       }
-
-      setCanvasComponents((prev) => [...prev, newComponent])
     }
 
     setActiveId(null)
@@ -103,7 +116,11 @@ export default function WebsiteBuilder() {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext 
+          onDragStart={handleDragStart} 
+          onDragEnd={handleDragEnd}
+          collisionDetection={closestCenter}
+        >
           {!isPreviewMode && <ComponentPalette isPro={isPro} />}
            <Canvas
             components={canvasComponents}
