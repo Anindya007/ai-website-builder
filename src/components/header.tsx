@@ -2,15 +2,17 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Crown, Download, Save, Eye } from "lucide-react"
+import { Crown, Download, Save, Eye, Edit } from "lucide-react"
 
 interface HeaderProps {
   isPro: boolean
   onUpgrade: () => void
   onExport: () => void
+  onPreview: () => void
+  isPreviewMode: boolean
 }
 
-export function Header({ isPro, onUpgrade , onExport}: HeaderProps) {
+export function Header({ isPro, onUpgrade, onExport, onPreview, isPreviewMode }: HeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -25,9 +27,22 @@ export function Header({ isPro, onUpgrade , onExport}: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" >
-            <Eye className="w-4 h-4 mr-2" />
-            Preview
+          <Button 
+            variant={isPreviewMode ? "default" : "outline"} 
+            size="sm" 
+            onClick={onPreview}
+          >
+            {isPreviewMode ? (
+              <>
+                <Edit className="w-4 h-4 mr-2" />
+                Go back to Editor
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4 mr-2" />
+                Preview
+              </>
+            )}
           </Button>
           <Button variant="outline" size="sm" onClick={onExport}>
             <Download className="w-4 h-4 mr-2" />

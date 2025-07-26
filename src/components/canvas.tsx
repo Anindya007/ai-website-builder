@@ -13,25 +13,28 @@ interface CanvasProps {
   editingComponent: string | null
   onToggleEdit: (canvasId: string) => void
   onUpdateHtml: (canvasId: string, htmlContent: string) => void
+  isPreviewMode?: boolean
 }
 
-export function Canvas({ components, onRemoveComponent, editingComponent, onToggleEdit, onUpdateHtml }: CanvasProps) {
+export function Canvas({ components, onRemoveComponent, editingComponent, onToggleEdit, onUpdateHtml, isPreviewMode = false }: CanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "canvas",
   })
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-100 h-full overflow-hidden">
-      <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
-        <h2 className="font-semibold text-gray-900">Canvas</h2>
-        <p className="text-sm text-gray-500">Drop components here to build your website</p>
-      </div>
+    <div className={`flex-1 flex flex-col ${isPreviewMode ? 'bg-white' : 'bg-gray-100'} h-full overflow-hidden`}>
+      {!isPreviewMode && (
+        <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
+          <h2 className="font-semibold text-gray-900">Canvas</h2>
+          <p className="text-sm text-gray-500">Drop components here to build your website</p>
+        </div>
+      )}
 
       <div
         ref={setNodeRef}
         className={`
-          flex-1 p-6 overflow-y-auto min-h-0
-          ${isOver ? "bg-blue-50 border-2 border-dashed border-blue-300" : ""}
+          flex-1 ${isPreviewMode ? 'p-0 bg-white' : 'p-6'} overflow-y-auto min-h-0
+          ${isOver && !isPreviewMode ? "bg-blue-50 border-2 border-dashed border-blue-300" : ""}
         `}
       >
         {components.length === 0 ? (
@@ -45,15 +48,16 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className={isPreviewMode ? "space-y-0" : "space-y-4"}>
             {components.map((component) => (
               <CanvasComponent
                 key={component.canvasId}
-                isEditing={editingComponent === component.canvasId}
+                isEditing={editingComponent === component.canvasId && !isPreviewMode}
                 component={component}
                 onRemove={() => onRemoveComponent(component.canvasId!)}
                 onToggleEdit={() => onToggleEdit(component.canvasId!)}
                 onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
+                isPreviewMode={isPreviewMode}
               />
             ))}
           </div>
@@ -69,9 +73,10 @@ interface CanvasComponentProps {
   onRemove: () => void
   onToggleEdit: () => void
   onUpdateHtml: (htmlContent: string) => void
+  isPreviewMode?: boolean
 }
 
-function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml }: CanvasComponentProps) {
+function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml, isPreviewMode = false }: CanvasComponentProps) {
   const [htmlContent, setHtmlContent] = useState(component.htmlContent || getDefaultHtml(component))
 
   const handleSave = () => {
@@ -85,35 +90,40 @@ function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdat
   }
 
    return (
-    <div className="group relative bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-      {/* Component Actions */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
-        {isEditing ? (
-          <>
-            <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleSave}>
-              Save
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleCancel}>
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onToggleEdit}>
-              <Edit className="w-3 h-3" />
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onRemove}>
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          </>
-        )}
-      </div>
+    <div className={`group relative ${isPreviewMode ? '' : 'bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors'}`}>
+      {/* Component Actions - Hidden in preview mode */}
+      {!isPreviewMode && (
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+          {isEditing ? (
+            <>
+              <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleSave}>
+                Save
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 px-2 bg-white" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onToggleEdit}>
+                <Edit className="w-3 h-3" />
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onRemove}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Component Content */}
       {isEditing ? (
         <Editor value={htmlContent} onChange={setHtmlContent} componentName={component.name} />
       ) : (
-        <div className="p-6" dangerouslySetInnerHTML={{ __html: component.htmlContent || getDefaultHtml(component) }} />
+        <div 
+          className={isPreviewMode ? "" : "p-6"} 
+          dangerouslySetInnerHTML={{ __html: component.htmlContent || getDefaultHtml(component) }} 
+        />
       )}
     </div>
   )

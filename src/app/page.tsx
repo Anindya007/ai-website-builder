@@ -16,8 +16,12 @@ export default function WebsiteBuilder() {
   const [showProModal, setShowProModal] = useState(false)
   const [isPro, setIsPro] = useState(false)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
 
   const handleDragStart = (event: DragStartEvent) => {
+    // Disable drag in preview mode
+    if (isPreviewMode) return
+    
     const { active } = event
     setActiveId(active.id as string)
 
@@ -27,6 +31,9 @@ export default function WebsiteBuilder() {
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
+    // Disable drag in preview mode
+    if (isPreviewMode) return
+    
     const { active, over } = event
 
     if (over && over.id === "canvas") {
@@ -77,19 +84,34 @@ export default function WebsiteBuilder() {
     downloadHtml(generateCompleteHtml(canvasComponents), 'my-website.html')
   }
 
+  const togglePreviewMode = () => {
+    setIsPreviewMode(!isPreviewMode)
+    // Exit edit mode when entering preview mode
+    if (!isPreviewMode) {
+      setEditingComponent(null)
+    }
+  }
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <Header isPro={isPro} onUpgrade={() => setShowProModal(true)} onExport={handleDownload}/>
+      <Header 
+        isPro={isPro} 
+        onUpgrade={() => setShowProModal(true)} 
+        onExport={handleDownload}
+        onPreview={togglePreviewMode}
+        isPreviewMode={isPreviewMode}
+      />
 
       <div className="flex-1 flex overflow-hidden">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <ComponentPalette isPro={isPro} />
+          {!isPreviewMode && <ComponentPalette isPro={isPro} />}
            <Canvas
             components={canvasComponents}
             onRemoveComponent={removeComponent}
             editingComponent={editingComponent}
             onToggleEdit={toggleEditMode}
             onUpdateHtml={updateComponentHtml}
+            isPreviewMode={isPreviewMode}
           />
 
           <DragOverlay>
