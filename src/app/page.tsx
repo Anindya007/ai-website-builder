@@ -79,6 +79,7 @@ export default function WebsiteBuilder() {
             ...component,
             id: `${component.id}-${Date.now()}`,
             canvasId: `canvas-${Date.now()}`,
+            width: 100, // Default to full width
           }
 
           // If dropping on a specific component, insert after it
@@ -112,6 +113,10 @@ export default function WebsiteBuilder() {
   
   const updateComponentHtml = (canvasId: string, htmlContent: string) => {
     setCanvasComponents((prev) => prev.map((comp) => (comp.canvasId === canvasId ? { ...comp, htmlContent } : comp)))
+  }
+
+  const updateComponent = (canvasId: string, updates: Partial<ComponentType>) => {
+    setCanvasComponents((prev) => prev.map((comp) => (comp.canvasId === canvasId ? { ...comp, ...updates } : comp)))
   }
 
   const toggleEditMode = (canvasId: string) => {
@@ -160,6 +165,7 @@ export default function WebsiteBuilder() {
             editingComponent={editingComponent}
             onToggleEdit={toggleEditMode}
             onUpdateHtml={updateComponentHtml}
+            onUpdateComponent={updateComponent}
             isPreviewMode={isPreviewMode}
           />
 

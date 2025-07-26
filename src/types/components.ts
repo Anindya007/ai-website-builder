@@ -7,4 +7,6 @@ export interface ComponentType {
   canvasId?: string
   htmlContent?: string
   isEditing?: boolean
+  width?: number // Width as percentage (1-100)
+  height?: number // Height in pixels (optional)
 }

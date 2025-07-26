@@ -5,8 +5,8 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-
 import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import type { ComponentType } from "@/types/components"
-import { Trash2, Edit, GripVertical } from "lucide-react"
-import { useState } from "react"
+import { Trash2, Edit, GripVertical, Move, RotateCcw } from "lucide-react"
+import { useState, useRef, useCallback } from "react"
 import { getDefaultHtml } from "@/lib/default-html"
 
 interface CanvasProps {
@@ -15,10 +15,11 @@ interface CanvasProps {
   editingComponent: string | null
   onToggleEdit: (canvasId: string) => void
   onUpdateHtml: (canvasId: string, htmlContent: string) => void
+  onUpdateComponent: (canvasId: string, updates: Partial<ComponentType>) => void
   isPreviewMode?: boolean
 }
 
-export function Canvas({ components, onRemoveComponent, editingComponent, onToggleEdit, onUpdateHtml, isPreviewMode = false }: CanvasProps) {
+export function Canvas({ components, onRemoveComponent, editingComponent, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false }: CanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "canvas",
   })
@@ -27,8 +28,47 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
     <div className={`flex-1 flex flex-col ${isPreviewMode ? 'bg-white' : 'bg-gray-100'} h-full overflow-hidden`}>
       {!isPreviewMode && (
         <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
-          <h2 className="font-semibold text-gray-900">Canvas</h2>
-          <p className="text-sm text-gray-500">Drop components here to build your website</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-900">Canvas</h2>
+              <p className="text-sm text-gray-500">Drop components here to build your website</p>
+            </div>
+            {components.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Layout:</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => {
+                    // Reset all components to full width (stacked layout)
+                    components.forEach(comp => {
+                      if (comp.canvasId) {
+                        onUpdateComponent(comp.canvasId, { width: 100 })
+                      }
+                    })
+                  }}
+                >
+                  Stack
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => {
+                    // Set all components to 33% width (three columns)
+                    components.forEach(comp => {
+                      if (comp.canvasId) {
+                        onUpdateComponent(comp.canvasId, { width: 33 })
+                      }
+                    })
+                  }}
+                >
+                  Columns
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -53,33 +93,37 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
           </div>
         ) : (
           <SortableContext items={components.map(c => c.canvasId!)} strategy={verticalListSortingStrategy}>
-            <div className={isPreviewMode ? "space-y-0" : "space-y-4"}>
-              {/* Drop zone indicator at the top when dragging */}
+            <div className={`flex flex-wrap gap-4 ${isPreviewMode ? "gap-0" : ""} items-start`}>
+              {/* Drop zone indicator when dragging */}
               {isOver && !isPreviewMode && (
-                <div className="h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all" />
+                <div className="w-full h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all" />
               )}
               
               {components.map((component, index) => (
-                <div key={component.canvasId}>
+                <div 
+                  key={component.canvasId}
+                  className={`${isPreviewMode ? "w-full" : ""}`}
+                  style={{
+                    width: isPreviewMode ? '100%' : `${component.width || 100}%`,
+                    minWidth: isPreviewMode ? 'auto' : '200px',
+                    flexShrink: 0
+                  }}
+                >
                   <SortableCanvasComponent
                     isEditing={editingComponent === component.canvasId && !isPreviewMode}
                     component={component}
                     onRemove={() => onRemoveComponent(component.canvasId!)}
                     onToggleEdit={() => onToggleEdit(component.canvasId!)}
                     onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
+                    onUpdateComponent={(updates) => onUpdateComponent(component.canvasId!, updates)}
                     isPreviewMode={isPreviewMode}
                   />
-                  
-                  {/* Drop zone indicator between components when dragging */}
-                  {isOver && !isPreviewMode && index < components.length - 1 && (
-                    <div className="h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all my-2" />
-                  )}
                 </div>
               ))}
               
               {/* Drop zone indicator at the bottom when dragging */}
               {isOver && !isPreviewMode && (
-                <div className="h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all" />
+                <div className="w-full h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all" />
               )}
             </div>
           </SortableContext>
@@ -95,6 +139,7 @@ interface CanvasComponentProps {
   onRemove: () => void
   onToggleEdit: () => void
   onUpdateHtml: (htmlContent: string) => void
+  onUpdateComponent: (updates: Partial<ComponentType>) => void
   isPreviewMode?: boolean
 }
 
@@ -135,8 +180,10 @@ function SortableCanvasComponent(props: SortableCanvasComponentProps) {
   )
 }
 
-function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml, isPreviewMode = false, dragHandleProps }: CanvasComponentProps & { dragHandleProps?: any }) {
+function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false, dragHandleProps }: CanvasComponentProps & { dragHandleProps?: any }) {
   const [htmlContent, setHtmlContent] = useState(component.htmlContent || getDefaultHtml(component))
+  const [isResizing, setIsResizing] = useState(false)
+  const resizeRef = useRef<HTMLDivElement>(null)
 
   const handleSave = () => {
     onUpdateHtml(htmlContent)
@@ -148,8 +195,96 @@ function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdat
     onToggleEdit()
   }
 
+  const handleWidthChange = (newWidth: number) => {
+    onUpdateComponent({ width: Math.max(20, Math.min(100, newWidth)) })
+  }
+
+  const handleHeightChange = (newHeight: number, skipContentCheck = false) => {
+    if (skipContentCheck) {
+      // Direct update without recalculating content height (used during resize)
+      onUpdateComponent({ height: newHeight })
+    } else {
+      // Get the content height (scrollHeight) to prevent shrinking below content
+      const contentHeight = resizeRef.current?.scrollHeight || 100
+      const minHeight = Math.max(100, contentHeight)
+      onUpdateComponent({ height: Math.max(minHeight, newHeight) })
+    }
+  }
+
+  const handleResetSize = () => {
+    onUpdateComponent({ width: 100, height: undefined })
+  }
+
+  const startResize = useCallback((e: React.MouseEvent, direction: 'right' | 'left' | 'top' | 'bottom' | 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left') => {
+    if (isPreviewMode || isEditing) return
+    
+    e.preventDefault()
+    setIsResizing(true)
+    
+    const startX = e.clientX
+    const startY = e.clientY
+    const startWidth = component.width || 100
+    const startHeight = component.height || resizeRef.current?.offsetHeight || 200
+    const containerWidth = resizeRef.current?.parentElement?.offsetWidth || 1000
+    
+    // Calculate content height constraint once at the start
+    const contentHeight = resizeRef.current?.scrollHeight || 100
+    const minHeight = Math.max(100, contentHeight)
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX
+      const deltaY = e.clientY - startY
+      
+      let newWidth = startWidth
+      let newHeight = startHeight
+      
+      // Handle horizontal resizing
+      if (direction.includes('right')) {
+        const deltaPercent = (deltaX / containerWidth) * 100
+        newWidth = startWidth + deltaPercent
+      } else if (direction.includes('left')) {
+        const deltaPercent = (-deltaX / containerWidth) * 100
+        newWidth = startWidth + deltaPercent
+      }
+      
+      // Handle vertical resizing
+      if (direction.includes('top')) {
+        newHeight = startHeight - deltaY
+      } else if (direction.includes('bottom')) {
+        newHeight = startHeight + deltaY
+      }
+      
+      // Apply changes
+      if (direction.includes('right') || direction.includes('left')) {
+        handleWidthChange(newWidth)
+      }
+      if (direction.includes('top') || direction.includes('bottom')) {
+        // Ensure we don't resize below content height using pre-calculated minHeight
+        const constrainedHeight = Math.max(minHeight, newHeight)
+        // Use skipContentCheck to avoid recalculating minHeight during resize
+        handleHeightChange(constrainedHeight, true)
+      }
+    }
+    
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+    
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }, [component.width, component.height, isPreviewMode, isEditing, onUpdateComponent])
+
    return (
-    <div className={`group relative ${isPreviewMode ? '' : 'bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors'}`}>
+    <div 
+      ref={resizeRef}
+      className={`group relative ${isPreviewMode ? '' : 'bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors'} ${isResizing ? 'select-none border-blue-500 shadow-lg' : ''}`}
+      style={{
+        height: component.height ? `${component.height}px` : 'auto',
+        minHeight: isPreviewMode ? 'auto' : '100px'
+      }}
+    >
       {/* Component Actions - Hidden in preview mode */}
       {!isPreviewMode && (
         <>
@@ -193,6 +328,80 @@ function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdat
               </>
             )}
           </div>
+
+          {/* Resize Handles */}
+          {!isEditing && (
+            <>
+              {/* Right edge */}
+              <div
+                className="absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10 flex items-center justify-center bg-gradient-to-l from-blue-500/10 to-transparent"
+                onMouseDown={(e) => startResize(e, 'right')}
+                title="Drag to resize width"
+              >
+                <div className="w-1 h-8 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+
+              {/* Left edge */}
+              <div
+                className="absolute top-0 left-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10 flex items-center justify-center bg-gradient-to-r from-blue-500/10 to-transparent"
+                onMouseDown={(e) => startResize(e, 'left')}
+                title="Drag to resize width"
+              >
+                <div className="w-1 h-8 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+
+              {/* Top edge */}
+              <div
+                className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10 flex items-center justify-center bg-gradient-to-b from-blue-500/10 to-transparent"
+                onMouseDown={(e) => startResize(e, 'top')}
+                title="Drag to resize height"
+              >
+                <div className="h-1 w-8 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+
+              {/* Bottom edge */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10 flex items-center justify-center bg-gradient-to-t from-blue-500/10 to-transparent"
+                onMouseDown={(e) => startResize(e, 'bottom')}
+                title="Drag to resize height"
+              >
+                <div className="h-1 w-8 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+
+              {/* Corner handles */}
+              <div
+                className="absolute top-0 right-0 w-3 h-3 cursor-ne-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-20"
+                onMouseDown={(e) => startResize(e, 'top-right')}
+                title="Drag to resize"
+              >
+                <div className="w-2 h-2 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+
+              <div
+                className="absolute top-0 left-0 w-3 h-3 cursor-nw-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-20"
+                onMouseDown={(e) => startResize(e, 'top-left')}
+                title="Drag to resize"
+              >
+                <div className="w-2 h-2 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+
+              <div
+                className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-20"
+                onMouseDown={(e) => startResize(e, 'bottom-right')}
+                title="Drag to resize"
+              >
+                <div className="w-2 h-2 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+
+              <div
+                className="absolute bottom-0 left-0 w-3 h-3 cursor-sw-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-20"
+                onMouseDown={(e) => startResize(e, 'bottom-left')}
+                title="Drag to resize"
+              >
+                <div className="w-2 h-2 bg-blue-500 rounded-full shadow-sm hover:bg-blue-600 transition-colors"></div>
+              </div>
+            </>
+          )}
         </>
       )}
 
