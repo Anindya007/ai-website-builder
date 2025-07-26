@@ -705,25 +705,73 @@ export function getDefaultHtml(component: ComponentType): string {
 </div>`
 
     case "file":
-      return `<div class="max-w-md mx-auto">
-  <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-    <div class="text-sm text-gray-600 mb-2">
-      <label class="cursor-pointer">
-        <span class="text-blue-600 hover:text-blue-500">Upload a file</span>
-        <input type="file" class="sr-only" />
-      </label>
-      <span> or drag and drop</span>
+      return `<div class="max-w-lg mx-auto bg-white p-6 rounded-lg border border-gray-200">
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">File Upload Form</h2>
+  <form class="space-y-6">
+    <!-- Name Field -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+      <input type="text" placeholder="Enter your full name" 
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
     </div>
-    <p class="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
-  </div>
-  <div class="mt-4">
-    <button class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-      Upload File
+    
+    <!-- Email Field -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+      <input type="email" placeholder="Enter your email" 
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+    </div>
+    
+    <!-- File Category -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">File Category</label>
+      <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <option>Select category</option>
+        <option>Document</option>
+        <option>Image</option>
+        <option>Video</option>
+        <option>Other</option>
+      </select>
+    </div>
+    
+    <!-- File Upload Area -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Upload File</label>
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <div class="text-sm text-gray-600 mb-2">
+          <label class="cursor-pointer">
+            <span class="text-blue-600 hover:text-blue-500 font-medium">Click to upload</span>
+            <input type="file" class="sr-only" multiple />
+          </label>
+          <span> or drag and drop</span>
+        </div>
+        <p class="text-xs text-gray-500">PNG, JPG, PDF, DOC up to 10MB each</p>
+      </div>
+    </div>
+    
+    <!-- Description Field -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+      <textarea placeholder="Add any additional notes about your files..." rows="3"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+    </div>
+    
+    <!-- Terms Checkbox -->
+    <div class="flex items-start">
+      <input type="checkbox" class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+      <label class="ml-2 text-sm text-gray-600">
+        I agree to the <a href="#" class="text-blue-600 hover:text-blue-500">terms and conditions</a> and understand that my files will be processed according to the privacy policy.
+      </label>
+    </div>
+    
+    <!-- Submit Button -->
+    <button type="button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+      Submit Files
     </button>
-  </div>
+  </form>
 </div>`
 
     case "cta":

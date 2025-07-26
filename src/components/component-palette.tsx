@@ -72,35 +72,14 @@ const COMPONENTS: ComponentType[] = [
     preview: "Multi-question survey form",
   },
   {
-    id: "file-upload",
-    name: "File Upload",
+    id: "file-upload-form",
+    name: "File Upload Form",
     category: "Forms",
     isPro: false,
-    preview: "File upload component with drag and drop",
+    preview: "Complete file upload form with drag and drop, file details, and submit button",
   },
 
-  // Free Components - Buttons & CTAs
-  {
-    id: "button-primary",
-    name: "Primary Button",
-    category: "Buttons",
-    isPro: false,
-    preview: "Standard call-to-action button",
-  },
-  {
-    id: "button-group",
-    name: "Button Group",
-    category: "Buttons",
-    isPro: false,
-    preview: "Group of related buttons",
-  },
-  {
-    id: "cta-section",
-    name: "CTA Section",
-    category: "Buttons",
-    isPro: false,
-    preview: "Call-to-action section with text and button",
-  },
+
 
   // Free Components - Content
   {
@@ -137,6 +116,13 @@ const COMPONENTS: ComponentType[] = [
     category: "Content",
     isPro: false,
     preview: "Team member cards with photos and info",
+  },
+  {
+    id: "cta-section",
+    name: "CTA Section",
+    category: "Content",
+    isPro: false,
+    preview: "Call-to-action section with text and button",
   },
 
   // Free Components - Media
