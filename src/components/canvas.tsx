@@ -21,8 +21,8 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
   })
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-100">
-      <div className="p-4 bg-white border-b border-gray-200">
+    <div className="flex-1 flex flex-col bg-gray-100 h-full overflow-hidden">
+      <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
         <h2 className="font-semibold text-gray-900">Canvas</h2>
         <p className="text-sm text-gray-500">Drop components here to build your website</p>
       </div>
@@ -30,7 +30,7 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
       <div
         ref={setNodeRef}
         className={`
-          flex-1 p-6 overflow-auto
+          flex-1 p-6 overflow-y-auto min-h-0
           ${isOver ? "bg-blue-50 border-2 border-dashed border-blue-300" : ""}
         `}
       >

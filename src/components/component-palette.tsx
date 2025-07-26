@@ -5,7 +5,7 @@ import type { ComponentType } from "@/types/components"
 import { Crown, Lock } from "lucide-react"
 
 const COMPONENTS: ComponentType[] = [
-  // Free Components
+  // Free Components - Headers
   {
     id: "hero-basic",
     name: "Basic Hero",
@@ -14,12 +14,95 @@ const COMPONENTS: ComponentType[] = [
     preview: "Simple hero section with title and subtitle",
   },
   {
+    id: "navbar-simple",
+    name: "Simple Navbar",
+    category: "Headers",
+    isPro: false,
+    preview: "Basic navigation bar with menu items",
+  },
+  {
+    id: "header-with-cta",
+    name: "Header with CTA",
+    category: "Headers",
+    isPro: false,
+    preview: "Header section with call-to-action button",
+  },
+
+  // Free Components - Forms
+  {
+    id: "contact-form-basic",
+    name: "Contact Form",
+    category: "Forms",
+    isPro: false,
+    preview: "Basic contact form with name, email, and message",
+  },
+  {
+    id: "newsletter-signup",
+    name: "Newsletter Signup",
+    category: "Forms",
+    isPro: false,
+    preview: "Email subscription form",
+  },
+  {
+    id: "login-form",
+    name: "Login Form",
+    category: "Forms",
+    isPro: false,
+    preview: "User login form with email and password",
+  },
+  {
+    id: "registration-form",
+    name: "Registration Form",
+    category: "Forms",
+    isPro: false,
+    preview: "User registration form with multiple fields",
+  },
+  {
+    id: "search-bar",
+    name: "Search Bar",
+    category: "Forms",
+    isPro: false,
+    preview: "Search input with button",
+  },
+  {
+    id: "survey-form",
+    name: "Survey Form",
+    category: "Forms",
+    isPro: false,
+    preview: "Multi-question survey form",
+  },
+  {
+    id: "file-upload",
+    name: "File Upload",
+    category: "Forms",
+    isPro: false,
+    preview: "File upload component with drag and drop",
+  },
+
+  // Free Components - Buttons & CTAs
+  {
     id: "button-primary",
     name: "Primary Button",
     category: "Buttons",
     isPro: false,
     preview: "Standard call-to-action button",
   },
+  {
+    id: "button-group",
+    name: "Button Group",
+    category: "Buttons",
+    isPro: false,
+    preview: "Group of related buttons",
+  },
+  {
+    id: "cta-section",
+    name: "CTA Section",
+    category: "Buttons",
+    isPro: false,
+    preview: "Call-to-action section with text and button",
+  },
+
+  // Free Components - Content
   {
     id: "text-block",
     name: "Text Block",
@@ -28,6 +111,36 @@ const COMPONENTS: ComponentType[] = [
     preview: "Basic text content block",
   },
   {
+    id: "feature-list",
+    name: "Feature List",
+    category: "Content",
+    isPro: false,
+    preview: "List of features with icons",
+  },
+  {
+    id: "faq-section",
+    name: "FAQ Section",
+    category: "Content",
+    isPro: false,
+    preview: "Frequently asked questions with collapsible answers",
+  },
+  {
+    id: "stats-section",
+    name: "Stats Section",
+    category: "Content",
+    isPro: false,
+    preview: "Statistics display with numbers and labels",
+  },
+  {
+    id: "team-section",
+    name: "Team Section",
+    category: "Content",
+    isPro: false,
+    preview: "Team member cards with photos and info",
+  },
+
+  // Free Components - Media
+  {
     id: "image-simple",
     name: "Simple Image",
     category: "Media",
@@ -35,11 +148,50 @@ const COMPONENTS: ComponentType[] = [
     preview: "Basic image component",
   },
   {
-    id: "footer-basic",
-    name: "Basic Footer",
-    category: "Footers",
+    id: "image-gallery",
+    name: "Image Gallery",
+    category: "Media",
     isPro: false,
-    preview: "Simple footer with links",
+    preview: "Grid layout for multiple images",
+  },
+  {
+    id: "video-embed",
+    name: "Video Embed",
+    category: "Media",
+    isPro: false,
+    preview: "Embedded video player",
+  },
+
+  // Free Components - Layout
+  {
+    id: "two-column",
+    name: "Two Column Layout",
+    category: "Layout",
+    isPro: false,
+    preview: "Two column content layout",
+  },
+  {
+    id: "three-column",
+    name: "Three Column Layout",
+    category: "Layout",
+    isPro: false,
+    preview: "Three column content layout",
+  },
+  {
+    id: "card-grid",
+    name: "Card Grid",
+    category: "Layout",
+    isPro: false,
+    preview: "Grid of content cards",
+  },
+
+  // Free Components - Footer
+  {
+    id: "footer",
+    name: "Footer",
+    category: "Footer",
+    isPro: false,
+    preview: "Website footer with links and social media",
   },
 
   // Pro Components
@@ -96,12 +248,12 @@ export function ComponentPalette({ isPro }: ComponentPaletteProps) {
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200 flex-shrink-0">
+      <div className="p-4 border-b border-gray-200">
         <h2 className="font-semibold text-gray-900">Components</h2>
         <p className="text-sm text-gray-500 mt-1">Drag components to canvas</p>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-9em)]">
+      <ScrollArea className="h-[calc(100vh-10rem)]">
         <div className="p-4 space-y-6">
           {categories.map((category) => (
             <div key={category}>
