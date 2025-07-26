@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import type { ComponentType } from "@/types/components"
 import { Trash2, Edit, GripVertical, Move, RotateCcw } from "lucide-react"
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { getDefaultHtml } from "@/lib/default-html"
 
 interface CanvasProps {
@@ -23,6 +23,23 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
   const { setNodeRef, isOver } = useDroppable({
     id: "canvas",
   })
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Auto-scroll to bottom when new components are added
+  useEffect(() => {
+    if (components.length > 0 && scrollContainerRef.current && !isPreviewMode) {
+      // Small delay to ensure the new component is rendered
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTo({
+            top: scrollContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          })
+        }
+      }, 100)
+    }
+  }, [components.length, isPreviewMode])
 
   return (
     <div className={`flex-1 flex flex-col ${isPreviewMode ? 'bg-white' : 'bg-gray-100'} h-full overflow-hidden`}>
@@ -73,7 +90,10 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
       )}
 
       <div
-        ref={setNodeRef}
+        ref={(node) => {
+          setNodeRef(node)
+          scrollContainerRef.current = node
+        }}
         className={`
           flex-1 ${isPreviewMode ? 'p-0 bg-white' : 'p-6'} overflow-y-auto min-h-0
           ${isOver && !isPreviewMode ? "bg-blue-50" : ""}
