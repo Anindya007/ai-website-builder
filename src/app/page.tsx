@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { PricingTable, SignUpButton } from "@clerk/nextjs"
 import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent, DragOverEvent, closestCenter, pointerWithin, rectIntersection } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { ComponentPalette } from "@/components/component-palette"
 import { Canvas } from "@/components/canvas"
 import { Header } from "@/components/header"
 import { ProUpgradeModal } from "@/components/pro-upgrade-modal"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { ComponentType } from "@/types/components"
 import { generateCompleteHtml, downloadHtml } from "@/lib/html-generator"
 
@@ -132,8 +134,9 @@ export default function WebsiteBuilder() {
 
 
   const upgradeToPro = () => {
-    setIsPro(true)
     setShowProModal(false)
+    // Redirect to Clerk's sign-up page with the pro plan preselected
+    window.location.href = "/sign-up?priceId=price_pro"
   }
 
   const handleDownload = () => {
@@ -191,7 +194,19 @@ export default function WebsiteBuilder() {
         </DndContext>
       </div>
 
-      <ProUpgradeModal isOpen={showProModal} onClose={() => setShowProModal(false)} onUpgrade={upgradeToPro} />
+      {/* <ProUpgradeModal isOpen={showProModal} onClose={() => setShowProModal(false)} onUpgrade={upgradeToPro} /> */}
+
+      <Dialog open={showProModal} onOpenChange={setShowProModal}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Pricing Plans</DialogTitle>
+            <DialogDescription>
+              Choose the plan that works best for you
+            </DialogDescription>
+          </DialogHeader>
+          <PricingTable/>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
