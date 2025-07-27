@@ -5,7 +5,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-
 import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import type { ComponentType } from "@/types/components"
-import { Trash2, Edit, GripVertical, Move, RotateCcw } from "lucide-react"
+import { Trash2, Edit, GripVertical, Move, RotateCcw, Code, Type } from "lucide-react"
 import { useState, useRef, useCallback, useEffect } from "react"
 import { getDefaultHtml } from "@/lib/default-html"
 
@@ -13,13 +13,14 @@ interface CanvasProps {
   components: ComponentType[]
   onRemoveComponent: (canvasId: string) => void
   editingComponent: string | null
-  onToggleEdit: (canvasId: string) => void
+  editingMode: 'html' | 'text' | null
+  onToggleEdit: (canvasId: string, mode?: 'html' | 'text') => void
   onUpdateHtml: (canvasId: string, htmlContent: string) => void
   onUpdateComponent: (canvasId: string, updates: Partial<ComponentType>) => void
   isPreviewMode?: boolean
 }
 
-export function Canvas({ components, onRemoveComponent, editingComponent, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false }: CanvasProps) {
+export function Canvas({ components, onRemoveComponent, editingComponent, editingMode, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false }: CanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "canvas",
   })
@@ -131,9 +132,10 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
                 >
                   <SortableCanvasComponent
                     isEditing={editingComponent === component.canvasId && !isPreviewMode}
+                    editingMode={editingMode}
                     component={component}
                     onRemove={() => onRemoveComponent(component.canvasId!)}
-                    onToggleEdit={() => onToggleEdit(component.canvasId!)}
+                    onToggleEdit={onToggleEdit}
                     onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
                     onUpdateComponent={(updates) => onUpdateComponent(component.canvasId!, updates)}
                     isPreviewMode={isPreviewMode}
@@ -156,8 +158,9 @@ export function Canvas({ components, onRemoveComponent, editingComponent, onTogg
 interface CanvasComponentProps {
   component: ComponentType
   isEditing: boolean
+  editingMode: 'html' | 'text' | null
   onRemove: () => void
-  onToggleEdit: () => void
+  onToggleEdit: (canvasId: string, mode?: 'html' | 'text') => void
   onUpdateHtml: (htmlContent: string) => void
   onUpdateComponent: (updates: Partial<ComponentType>) => void
   isPreviewMode?: boolean
@@ -200,19 +203,101 @@ function SortableCanvasComponent(props: SortableCanvasComponentProps) {
   )
 }
 
-function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false, dragHandleProps }: CanvasComponentProps & { dragHandleProps?: any }) {
+function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false, dragHandleProps }: CanvasComponentProps & { dragHandleProps?: any }) {
   const [htmlContent, setHtmlContent] = useState(component.htmlContent || getDefaultHtml(component))
   const [isResizing, setIsResizing] = useState(false)
   const resizeRef = useRef<HTMLDivElement>(null)
 
+  const [textContent, setTextContent] = useState('')
+
+  // Extract content for WYSIWYG editing when switching to text editing mode
+  useEffect(() => {
+    if (isEditing && editingMode === 'text') {
+      const extractedContent = extractContentForWysiwyg(component.htmlContent || getDefaultHtml(component))
+      setTextContent(extractedContent)
+    }
+  }, [isEditing, editingMode, component.htmlContent, component])
+
+  // Utility function to extract content for WYSIWYG editing
+  const extractContentForWysiwyg = (html: string): string => {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = html
+    
+    // For WYSIWYG, we want to preserve some basic formatting
+    // Look for the main content area and extract its innerHTML
+    const contentElements = tempDiv.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6, ul, ol, li')
+    
+    if (contentElements.length > 0) {
+      // Find the element with the most text content
+      let mainElement = contentElements[0]
+      let maxTextLength = 0
+      
+      contentElements.forEach(el => {
+        const textLength = (el.textContent || '').trim().length
+        if (textLength > maxTextLength) {
+          maxTextLength = textLength
+          mainElement = el
+        }
+      })
+      
+      // Return the innerHTML of the main content element for WYSIWYG editing
+      return mainElement.innerHTML || mainElement.textContent || ''
+    }
+    
+    // Fallback to plain text
+    return tempDiv.textContent || tempDiv.innerText || ''
+  }
+
+  // Utility function to replace content in HTML while preserving structure
+  const replaceContentInHtml = (html: string, newContent: string): string => {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = html
+    
+    // Find the main content container
+    const contentElements = tempDiv.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6, ul, ol')
+    
+    if (contentElements.length > 0) {
+      // Find the element with the most text content (likely the main content)
+      let mainElement = contentElements[0]
+      let maxTextLength = 0
+      
+      contentElements.forEach(el => {
+        const textLength = (el.textContent || '').trim().length
+        if (textLength > maxTextLength) {
+          maxTextLength = textLength
+          mainElement = el
+        }
+      })
+      
+      // Replace the content of the main element
+      // Since we're now working with WYSIWYG HTML content, always use innerHTML
+      mainElement.innerHTML = newContent
+    } else {
+      // If no suitable container found, wrap in a paragraph
+      tempDiv.innerHTML = `<p>${newContent}</p>`
+    }
+    
+    return tempDiv.innerHTML
+  }
+
   const handleSave = () => {
-    onUpdateHtml(htmlContent)
-    onToggleEdit()
+    if (editingMode === 'html') {
+      onUpdateHtml(htmlContent)
+    } else if (editingMode === 'text') {
+      // For WYSIWYG, textContent now contains HTML, so we use it directly to replace content
+      const updatedHtml = replaceContentInHtml(component.htmlContent || getDefaultHtml(component), textContent)
+      onUpdateHtml(updatedHtml)
+    }
+    onToggleEdit(component.canvasId!, editingMode!)
   }
 
   const handleCancel = () => {
     setHtmlContent(component.htmlContent || getDefaultHtml(component))
-    onToggleEdit()
+    if (editingMode === 'text') {
+      const extractedContent = extractContentForWysiwyg(component.htmlContent || getDefaultHtml(component))
+      setTextContent(extractedContent)
+    }
+    onToggleEdit(component.canvasId!, editingMode!)
   }
 
   const handleWidthChange = (newWidth: number) => {
@@ -339,8 +424,23 @@ function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdat
               </>
             ) : (
               <>
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onToggleEdit}>
-                  <Edit className="w-3 h-3" />
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 w-8 p-0 bg-white" 
+                  onClick={() => onToggleEdit(component.canvasId!, 'html')}
+                  title="Edit HTML"
+                >
+                  <Code className="w-3 h-3" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 w-8 p-0 bg-white" 
+                  onClick={() => onToggleEdit(component.canvasId!, 'text')}
+                  title="Edit Text"
+                >
+                  <Type className="w-3 h-3" />
                 </Button>
                 <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onRemove}>
                   <Trash2 className="w-3 h-3" />
@@ -427,7 +527,11 @@ function CanvasComponent({ component, isEditing, onRemove, onToggleEdit, onUpdat
 
       {/* Component Content */}
       {isEditing ? (
-        <Editor value={htmlContent} onChange={setHtmlContent} componentName={component.name} />
+        editingMode === 'html' ? (
+          <HtmlEditor value={htmlContent} onChange={setHtmlContent} componentName={component.name} />
+        ) : (
+          <TextEditor value={textContent} onChange={setTextContent} componentName={component.name} />
+        )
       ) : (
         <div 
           className={isPreviewMode ? "" : "p-6"} 
@@ -558,15 +662,16 @@ function ComponentPreview({ component }: { component: ComponentType }) {
 
 }
 
-function Editor({
+function HtmlEditor({
   value,
   onChange,
   componentName,
 }: { value: string; onChange: (value: string) => void; componentName: string }) {
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-        <span className="text-sm font-medium">Editing: {componentName}</span>
+      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
+        <Code className="w-4 h-4 text-gray-600" />
+        <span className="text-sm font-medium">HTML Editor: {componentName}</span>
       </div>
       <textarea
         className="w-full h-48 p-4 font-mono text-sm border-none resize-none focus:outline-none bg-gray-900 text-green-400"
@@ -580,6 +685,153 @@ function Editor({
           💡 Tip: Use standard HTML tags. Tailwind CSS classes are available for styling.
         </p>
       </div>
+    </div>
+  )
+}
+
+function TextEditor({
+  value,
+  onChange,
+  componentName,
+}: { value: string; onChange: (value: string) => void; componentName: string }) {
+  const editorRef = useRef<HTMLDivElement>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Initialize editor content only once when component mounts
+  useEffect(() => {
+    if (editorRef.current && !isInitialized && value !== undefined) {
+      // Convert plain text to simple HTML for WYSIWYG display
+      const isPlainText = !value.includes('<')
+      if (isPlainText) {
+        // Convert line breaks to paragraphs for better WYSIWYG experience
+        const paragraphs = value.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('')
+        editorRef.current.innerHTML = paragraphs || '<p><br></p>'
+      } else {
+        // If it's already HTML, just set it directly
+        editorRef.current.innerHTML = value || '<p><br></p>'
+      }
+      setIsInitialized(true)
+    }
+  }, [value, isInitialized])
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      // Pass the HTML content to maintain formatting
+      const htmlContent = editorRef.current.innerHTML
+      onChange(htmlContent)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle basic shortcuts
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 'z':
+          e.preventDefault()
+          executeCommand('undo')
+          break
+        case 'y':
+          e.preventDefault()
+          executeCommand('redo')
+          break
+      }
+    }
+    
+    // Handle Enter key to create new paragraphs
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      executeCommand('insertParagraph')
+    }
+  }
+
+  // Save and restore cursor position
+  const saveCursorPosition = () => {
+    const selection = window.getSelection()
+    if (selection && selection.rangeCount > 0) {
+      return selection.getRangeAt(0)
+    }
+    return null
+  }
+
+  const restoreCursorPosition = (range: Range | null) => {
+    if (range) {
+      const selection = window.getSelection()
+      if (selection) {
+        selection.removeAllRanges()
+        selection.addRange(range)
+      }
+    }
+  }
+
+  const executeCommand = (command: string) => {
+    const range = saveCursorPosition()
+    document.execCommand(command, false)
+    handleInput()
+    
+    // Small delay to ensure DOM is updated before restoring cursor
+    setTimeout(() => {
+      editorRef.current?.focus()
+      if (range) {
+        restoreCursorPosition(range)
+      }
+    }, 0)
+  }
+
+  return (
+    <div className="border border-gray-300 rounded-lg overflow-hidden">
+      <div className="bg-blue-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Type className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">WYSIWYG Editor: {componentName}</span>
+        </div>                
+      </div>
+      
+      <div
+        ref={editorRef}
+        contentEditable
+        className="w-full p-4 text-sm border-none focus:outline-none bg-white text-gray-900 leading-relaxed wysiwyg-editor"
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        style={{ 
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          minHeight: '192px'
+        }}
+        suppressContentEditableWarning={true}
+      />
+      
+      <div className="bg-blue-50 px-4 py-2 border-t border-gray-200">
+        <p className="text-xs text-blue-700">
+          ✨ WYSIWYG Editor: See your changes as you type. Use Ctrl+Z/Y for undo/redo, or use the toolbar buttons for lists.
+        </p>
+      </div>
+      
+      {/* Inline styles for placeholder and editor styling */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .wysiwyg-editor:empty:before {
+            content: 'Start typing to edit ${componentName}...';
+            color: #9CA3AF;
+            font-style: italic;
+            pointer-events: none;
+          }
+          .wysiwyg-editor p {
+            margin: 0.5em 0;
+          }
+          .wysiwyg-editor p:first-child {
+            margin-top: 0;
+          }
+          .wysiwyg-editor p:last-child {
+            margin-bottom: 0;
+          }
+          .wysiwyg-editor ul, .wysiwyg-editor ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+          }
+          .wysiwyg-editor li {
+            margin: 0.25em 0;
+          }
+        `
+      }} />
     </div>
   )
 }

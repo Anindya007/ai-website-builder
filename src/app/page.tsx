@@ -17,6 +17,7 @@ export default function WebsiteBuilder() {
   const [showProModal, setShowProModal] = useState(false)
   const [isPro, setIsPro] = useState(false)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
+  const [editingMode, setEditingMode] = useState<'html' | 'text' | null>(null)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -119,8 +120,14 @@ export default function WebsiteBuilder() {
     setCanvasComponents((prev) => prev.map((comp) => (comp.canvasId === canvasId ? { ...comp, ...updates } : comp)))
   }
 
-  const toggleEditMode = (canvasId: string) => {
-    setEditingComponent(editingComponent === canvasId ? null : canvasId)
+  const toggleEditMode = (canvasId: string, mode: 'html' | 'text' = 'html') => {
+    if (editingComponent === canvasId && editingMode === mode) {
+      setEditingComponent(null)
+      setEditingMode(null)
+    } else {
+      setEditingComponent(canvasId)
+      setEditingMode(mode)
+    }
   }
 
 
@@ -138,6 +145,7 @@ export default function WebsiteBuilder() {
     // Exit edit mode when entering preview mode
     if (!isPreviewMode) {
       setEditingComponent(null)
+      setEditingMode(null)
     }
   }
 
@@ -163,6 +171,7 @@ export default function WebsiteBuilder() {
             components={canvasComponents}
             onRemoveComponent={removeComponent}
             editingComponent={editingComponent}
+            editingMode={editingMode}
             onToggleEdit={toggleEditMode}
             onUpdateHtml={updateComponentHtml}
             onUpdateComponent={updateComponent}
