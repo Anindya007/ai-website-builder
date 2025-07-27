@@ -197,7 +197,7 @@ export default function WebsiteBuilder() {
       {/* <ProUpgradeModal isOpen={showProModal} onClose={() => setShowProModal(false)} onUpgrade={upgradeToPro} /> */}
 
       <Dialog open={showProModal} onOpenChange={setShowProModal}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] opacity-100">
           <DialogHeader>
             <DialogTitle>Pricing Plans</DialogTitle>
             <DialogDescription>
