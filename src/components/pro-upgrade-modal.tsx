@@ -13,14 +13,15 @@ interface ProUpgradeModalProps {
 
 export function ProUpgradeModal({ isOpen, onClose, onUpgrade }: ProUpgradeModalProps) {
   const proFeatures = [
+    "HTML code editing",
+    "Export options",
     "Advanced animated components",
     "E-commerce components",
     "Analytics dashboard widgets",
     "Advanced form components",
-    "Premium templates",
+    "SEO-friendly meta tags and descriptions",
     "Priority support",
-    "Custom branding removal",
-    "Advanced export options",
+    "Custom branding removal"
   ]
 
   return (

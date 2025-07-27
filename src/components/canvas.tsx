@@ -18,9 +18,11 @@ interface CanvasProps {
   onUpdateHtml: (canvasId: string, htmlContent: string) => void
   onUpdateComponent: (canvasId: string, updates: Partial<ComponentType>) => void
   isPreviewMode?: boolean
+  isPro?: boolean
+  onShowProModal?: () => void
 }
 
-export function Canvas({ components, onRemoveComponent, editingComponent, editingMode, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false }: CanvasProps) {
+export function Canvas({ components, onRemoveComponent, editingComponent, editingMode, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false, isPro = false, onShowProModal }: CanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "canvas",
   })
@@ -139,6 +141,8 @@ export function Canvas({ components, onRemoveComponent, editingComponent, editin
                     onUpdateHtml={(htmlContent) => onUpdateHtml(component.canvasId!, htmlContent)}
                     onUpdateComponent={(updates) => onUpdateComponent(component.canvasId!, updates)}
                     isPreviewMode={isPreviewMode}
+                    isPro={isPro}
+                    onShowProModal={onShowProModal}
                   />
                 </div>
               ))}
@@ -164,6 +168,8 @@ interface CanvasComponentProps {
   onUpdateHtml: (htmlContent: string) => void
   onUpdateComponent: (updates: Partial<ComponentType>) => void
   isPreviewMode?: boolean
+  isPro?: boolean
+  onShowProModal?: () => void
 }
 
 interface SortableCanvasComponentProps extends CanvasComponentProps {}
@@ -203,12 +209,41 @@ function SortableCanvasComponent(props: SortableCanvasComponentProps) {
   )
 }
 
-function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false, dragHandleProps }: CanvasComponentProps & { dragHandleProps?: any }) {
+function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggleEdit, onUpdateHtml, onUpdateComponent, isPreviewMode = false, isPro = false, onShowProModal, dragHandleProps }: CanvasComponentProps & { dragHandleProps?: any }) {
   const [htmlContent, setHtmlContent] = useState(component.htmlContent || getDefaultHtml(component))
   const [isResizing, setIsResizing] = useState(false)
   const resizeRef = useRef<HTMLDivElement>(null)
 
-  const [textContent, setTextContent] = useState('')
+  // Initialize textContent with extracted content from component HTML
+  const [textContent, setTextContent] = useState(() => {
+    const tempDiv = document.createElement('div')
+    const html = component.htmlContent || getDefaultHtml(component)
+    tempDiv.innerHTML = html
+    
+    // For WYSIWYG, we want to preserve some basic formatting
+    // Look for the main content area and extract its innerHTML
+    const contentElements = tempDiv.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6, ul, ol, li')
+    
+    if (contentElements.length > 0) {
+      // Find the element with the most text content
+      let mainElement = contentElements[0]
+      let maxTextLength = 0
+      
+      contentElements.forEach(el => {
+        const textLength = (el.textContent || '').trim().length
+        if (textLength > maxTextLength) {
+          maxTextLength = textLength
+          mainElement = el
+        }
+      })
+      
+      // Return the innerHTML of the main content element for WYSIWYG editing
+      return mainElement.innerHTML || mainElement.textContent || ''
+    }
+    
+    // Fallback to plain text
+    return tempDiv.textContent || tempDiv.innerText || ''
+  })
 
   // Extract content for WYSIWYG editing when switching to text editing mode
   useEffect(() => {
@@ -428,8 +463,14 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
                   size="sm" 
                   variant="outline" 
                   className="h-8 w-8 p-0 bg-white" 
-                  onClick={() => onToggleEdit(component.canvasId!, 'html')}
-                  title="Edit HTML"
+                  onClick={() => {
+                    if (!isPro && onShowProModal) {
+                      onShowProModal()
+                    } else {
+                      onToggleEdit(component.canvasId!, 'html')
+                    }
+                  }}
+                  title={isPro ? "Edit HTML" : "Edit HTML (Pro Feature)"}
                 >
                   <Code className="w-3 h-3" />
                 </Button>

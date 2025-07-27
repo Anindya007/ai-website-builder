@@ -176,6 +176,8 @@ export default function WebsiteBuilder() {
             onUpdateHtml={updateComponentHtml}
             onUpdateComponent={updateComponent}
             isPreviewMode={isPreviewMode}
+            isPro={isPro}
+            onShowProModal={() => setShowProModal(true)}
           />
 
           <DragOverlay>
