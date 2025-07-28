@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PricingTable, SignUpButton } from "@clerk/nextjs"
 import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent, DragOverEvent, closestCenter, pointerWithin, rectIntersection } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
@@ -21,6 +21,24 @@ export default function WebsiteBuilder() {
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
   const [editingMode, setEditingMode] = useState<'html' | 'text' | null>(null)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Ensure component only renders on client side
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Show loading state during hydration
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Website Builder...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleDragStart = (event: DragStartEvent) => {
     // Disable drag in preview mode
@@ -136,7 +154,9 @@ export default function WebsiteBuilder() {
   const upgradeToPro = () => {
     setShowProModal(false)
     // Redirect to Clerk's sign-up page with the pro plan preselected
-    window.location.href = "/sign-up?priceId=price_pro"
+    if (typeof window !== 'undefined') {
+      window.location.href = "/sign-up?priceId=price_pro"
+    }
   }
 
   const handleDownload = () => {
