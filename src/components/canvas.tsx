@@ -216,6 +216,7 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
 
   // Initialize textContent with extracted content from component HTML
   const [textContent, setTextContent] = useState(() => {
+    if (typeof document === 'undefined') return ''
     const tempDiv = document.createElement('div')
     const html = component.htmlContent || getDefaultHtml(component)
     tempDiv.innerHTML = html
@@ -255,6 +256,7 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
 
   // Utility function to extract content for WYSIWYG editing
   const extractContentForWysiwyg = (html: string): string => {
+    if (typeof document === 'undefined') return ''
     const tempDiv = document.createElement('div')
     tempDiv.innerHTML = html
     
@@ -285,6 +287,7 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
 
   // Utility function to replace content in HTML while preserving structure
   const replaceContentInHtml = (html: string, newContent: string): string => {
+    if (typeof document === 'undefined') return html
     const tempDiv = document.createElement('div')
     tempDiv.innerHTML = html
     
@@ -414,12 +417,16 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
     
     const handleMouseUp = () => {
       setIsResizing(false)
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
     }
     
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    if (typeof document !== 'undefined') {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
   }, [component.width, component.height, isPreviewMode, isEditing, onUpdateComponent])
 
    return (
@@ -802,6 +809,7 @@ function TextEditor({
 
   // Save and restore cursor position
   const saveCursorPosition = () => {
+    if (typeof window === 'undefined') return null
     const selection = window.getSelection()
     if (selection && selection.rangeCount > 0) {
       return selection.getRangeAt(0)
@@ -810,7 +818,7 @@ function TextEditor({
   }
 
   const restoreCursorPosition = (range: Range | null) => {
-    if (range) {
+    if (range && typeof window !== 'undefined') {
       const selection = window.getSelection()
       if (selection) {
         selection.removeAllRanges()
@@ -821,7 +829,9 @@ function TextEditor({
 
   const executeCommand = (command: string) => {
     const range = saveCursorPosition()
-    document.execCommand(command, false)
+    if (typeof document !== 'undefined') {
+      document.execCommand(command, false)
+    }
     handleInput()
     
     // Small delay to ensure DOM is updated before restoring cursor
