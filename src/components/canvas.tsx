@@ -342,11 +342,14 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
   const handleHeightChange = (newHeight: number, skipContentCheck = false) => {
     if (skipContentCheck) {
       // Direct update without recalculating content height (used during resize)
-      onUpdateComponent({ height: newHeight })
+      // Still enforce a reasonable minimum height to prevent components from disappearing
+      onUpdateComponent({ height: Math.max(50, newHeight) })
     } else {
       // Get the content height (scrollHeight) to prevent shrinking below content
-      const contentHeight = resizeRef.current?.scrollHeight || 100
-      const minHeight = Math.max(100, contentHeight)
+      const contentElement = resizeRef.current?.querySelector('[dangerouslySetInnerHTML]') as HTMLElement
+      const actualContentHeight = contentElement?.scrollHeight || resizeRef.current?.scrollHeight || 100
+      // Use a more flexible minimum height that allows for better shrinking
+      const minHeight = Math.max(50, Math.min(actualContentHeight - 48, actualContentHeight * 0.8))
       onUpdateComponent({ height: Math.max(minHeight, newHeight) })
     }
   }
@@ -368,8 +371,11 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
     const containerWidth = resizeRef.current?.parentElement?.offsetWidth || 1000
     
     // Calculate content height constraint once at the start
-    const contentHeight = resizeRef.current?.scrollHeight || 100
-    const minHeight = Math.max(100, contentHeight)
+    // Use a more reasonable minimum height calculation
+    const contentElement = resizeRef.current?.querySelector('[dangerouslySetInnerHTML]') as HTMLElement
+    const actualContentHeight = contentElement?.scrollHeight || resizeRef.current?.scrollHeight || 100
+    // Reduce the minimum height to allow more flexibility, accounting for padding
+    const minHeight = Math.max(50, Math.min(actualContentHeight - 48, actualContentHeight * 0.8))
     
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX
@@ -422,7 +428,7 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
       className={`group relative ${isPreviewMode ? '' : 'bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors'} ${isResizing ? 'select-none border-blue-500 shadow-lg' : ''}`}
       style={{
         height: component.height ? `${component.height}px` : 'auto',
-        minHeight: isPreviewMode ? 'auto' : '100px'
+        minHeight: isPreviewMode ? 'auto' : '50px'
       }}
     >
       {/* Component Actions - Hidden in preview mode */}
@@ -482,6 +488,15 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
                   title="Edit Text"
                 >
                   <Type className="w-3 h-3" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 w-8 p-0 bg-white" 
+                  onClick={handleResetSize}
+                  title="Reset Size"
+                >
+                  <RotateCcw className="w-3 h-3" />
                 </Button>
                 <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-white" onClick={onRemove}>
                   <Trash2 className="w-3 h-3" />
