@@ -116,7 +116,7 @@ export function Canvas({ components, onRemoveComponent, editingComponent, editin
           </div>
         ) : (
           <SortableContext items={components.map(c => c.canvasId!)} strategy={verticalListSortingStrategy}>
-            <div className={`flex flex-wrap gap-4 ${isPreviewMode ? "gap-0" : ""} items-start`}>
+            <div className={`flex flex-wrap gap-4 ${isPreviewMode ? "gap-0" : ""} items-start w-full`}>
               {/* Drop zone indicator when dragging */}
               {isOver && !isPreviewMode && (
                 <div className="w-full h-2 bg-blue-200 border-2 border-dashed border-blue-400 rounded-md opacity-75 transition-all" />
@@ -128,7 +128,7 @@ export function Canvas({ components, onRemoveComponent, editingComponent, editin
                   className={`${isPreviewMode ? "w-full" : ""}`}
                   style={{
                     width: isPreviewMode ? '100%' : `${component.width || 100}%`,
-                    minWidth: isPreviewMode ? 'auto' : '200px',
+                    minWidth: isPreviewMode ? 'auto' : '100px', // Reduced from 200px to allow smaller components
                     flexShrink: 0
                   }}
                 >
@@ -339,20 +339,25 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
   }
 
   const handleWidthChange = (newWidth: number) => {
-    onUpdateComponent({ width: Math.max(20, Math.min(100, newWidth)) })
+    // Allow more flexible width constraints - minimum 10% instead of 20%
+    onUpdateComponent({ width: Math.max(10, Math.min(100, newWidth)) })
   }
 
   const handleHeightChange = (newHeight: number, skipContentCheck = false) => {
     if (skipContentCheck) {
       // Direct update without recalculating content height (used during resize)
-      // Still enforce a reasonable minimum height to prevent components from disappearing
+      // Enforce a reasonable minimum height to prevent components from disappearing
       onUpdateComponent({ height: Math.max(50, newHeight) })
     } else {
       // Get the content height (scrollHeight) to prevent shrinking below content
       const contentElement = resizeRef.current?.querySelector('[dangerouslySetInnerHTML]') as HTMLElement
       const actualContentHeight = contentElement?.scrollHeight || resizeRef.current?.scrollHeight || 100
-      // Use a more flexible minimum height that allows for better shrinking
-      const minHeight = Math.max(50, Math.min(actualContentHeight - 48, actualContentHeight * 0.8))
+      
+      // Calculate minimum height more conservatively to prevent shrinking below content
+      // Add padding (48px = 24px top + 24px bottom) to ensure content is not cut off
+      const paddingHeight = isPreviewMode ? 0 : 48 // Account for p-6 padding (24px each side)
+      const minHeight = Math.max(50, actualContentHeight + paddingHeight)
+      
       onUpdateComponent({ height: Math.max(minHeight, newHeight) })
     }
   }
@@ -374,11 +379,8 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
     const containerWidth = resizeRef.current?.parentElement?.offsetWidth || 1000
     
     // Calculate content height constraint once at the start
-    // Use a more reasonable minimum height calculation
-    const contentElement = resizeRef.current?.querySelector('[dangerouslySetInnerHTML]') as HTMLElement
-    const actualContentHeight = contentElement?.scrollHeight || resizeRef.current?.scrollHeight || 100
-    // Reduce the minimum height to allow more flexibility, accounting for padding
-    const minHeight = Math.max(50, Math.min(actualContentHeight - 48, actualContentHeight * 0.8))
+    const actualContentHeight = resizeRef.current?.scrollHeight 
+    
     
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX
@@ -398,9 +400,9 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
       
       // Handle vertical resizing
       if (direction.includes('top')) {
-        newHeight = startHeight - deltaY
+        newHeight = startHeight - deltaY;
       } else if (direction.includes('bottom')) {
-        newHeight = startHeight + deltaY
+        newHeight = startHeight + deltaY;
       }
       
       // Apply changes
@@ -409,7 +411,8 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
       }
       if (direction.includes('top') || direction.includes('bottom')) {
         // Ensure we don't resize below content height using pre-calculated minHeight
-        const constrainedHeight = Math.max(minHeight, newHeight)
+        const constrainedHeight = Math.max(actualContentHeight || 0, newHeight)
+        //const constrainedHeight = newHeight
         // Use skipContentCheck to avoid recalculating minHeight during resize
         handleHeightChange(constrainedHeight, true)
       }
@@ -435,7 +438,8 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
       className={`group relative ${isPreviewMode ? '' : 'bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors'} ${isResizing ? 'select-none border-blue-500 shadow-lg' : ''}`}
       style={{
         height: component.height ? `${component.height}px` : 'auto',
-        minHeight: isPreviewMode ? 'auto' : '50px'
+        minHeight: isPreviewMode ? 'auto' : '50px',
+        minWidth: isPreviewMode ? 'auto' : '100px' // Ensure minimum width for usability
       }}
     >
       {/* Component Actions - Hidden in preview mode */}
@@ -597,7 +601,7 @@ function CanvasComponent({ component, isEditing, editingMode, onRemove, onToggle
         )
       ) : (
         <div 
-          className={isPreviewMode ? "" : "p-6"} 
+          className={`${isPreviewMode ? "" : "p-6"} min-h-0`}
           dangerouslySetInnerHTML={{ __html: component.htmlContent || getDefaultHtml(component) }} 
         />
       )}
