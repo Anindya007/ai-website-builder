@@ -11,6 +11,7 @@ import { ProUpgradeModal } from "@/components/pro-upgrade-modal"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { ComponentType } from "@/types/components"
 import { generateCompleteHtml, downloadHtml } from "@/lib/html-generator"
+import { useAuth } from "@clerk/nextjs"
 
 export default function WebsiteBuilder() {
   const [canvasComponents, setCanvasComponents] = useState<ComponentType[]>([])
@@ -22,12 +23,34 @@ export default function WebsiteBuilder() {
   const [editingMode, setEditingMode] = useState<'html' | 'text' | null>(null)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const {isSignedIn} = useAuth();
 
-  // Ensure component only renders on client side
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+ 
+ useEffect(() => {
+  // To check if the user is attached to a pro plan, we fetch auth status only after the user is signed in  
+  if (isSignedIn) {
+  const fetchAuthStatus = async () => {
+    try {
+      const res = await fetch('/api/auth-status');
+      const data = await res.json();
+      console.log('Auth status:', data);
+      setIsPro(data.isPro);
+      setIsMounted(true)
+    } catch (error) {
+      console.error('Failed to fetch auth status:', error);
+      setIsPro(false); // fail-safe
+      setIsMounted(false)
+    }
+  };
+  fetchAuthStatus();
+}
 
+  }, [isSignedIn]);
+
+
+  
+
+  
   // Show loading state during hydration
   if (!isMounted) {
     return (
