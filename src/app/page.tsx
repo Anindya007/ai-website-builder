@@ -26,25 +26,26 @@ export default function WebsiteBuilder() {
   const {isSignedIn} = useAuth();
 
  
+useEffect(() => {
+  setIsMounted(true)
+},[])
+
  useEffect(() => {
   // To check if the user is attached to a pro plan, we fetch auth status only after the user is signed in  
-  if (isSignedIn) {
+  
   const fetchAuthStatus = async () => {
     try {
       const res = await fetch('/api/auth-status');
       const data = await res.json();
       console.log('Auth status:', data);
-      setIsPro(data.isPro);
-      setIsMounted(true)
+      setIsPro(data.isPro);     
     } catch (error) {
       console.error('Failed to fetch auth status:', error);
       setIsPro(false); // fail-safe
-      setIsMounted(false)
     }
-  };
+  }
+  
   fetchAuthStatus();
-}
-
   }, [isSignedIn]);
 
 
